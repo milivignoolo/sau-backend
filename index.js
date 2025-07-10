@@ -3,7 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const sequelize = require('./config/database');         // conexión Sequelize
 const initModels = require('./models/initModels');      // relaciones y modelos
-const models = initModels(sequelize);                   // instanciar los modelos
+const models = initModels(sequelize);   
+require('dotenv').config();                // instanciar los modelos
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +28,10 @@ const adminRoutes = require('./routes/admin.routes');
 app.use('/api/administradores', adminRoutes);
 const pasantiaRoutes = require('./routes/pasantia.routes');
 app.use('/api/pasantias', pasantiaRoutes);
+
+//email
+const emailRoutes = require('./routes/email.routes');
+app.use('/api/email', emailRoutes);
 
 
 //LOGIN

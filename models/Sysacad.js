@@ -3,7 +3,7 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   const Sysacad = sequelize.define('Sysacad', {
     dni: { type: DataTypes.STRING, allowNull: false },
-    legajo: { type: DataTypes.STRING, allowNull: false },
+    legajo: { type: DataTypes.INTEGER, allowNull: false },
     nombre: DataTypes.STRING,
     apellido: DataTypes.STRING,
     email: DataTypes.STRING,
