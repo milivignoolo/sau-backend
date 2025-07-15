@@ -49,6 +49,25 @@ const empresaController = {
     }
   },
 
+  verificarCuit: async (req, res) => {
+    try {
+      const { cuit } = req.body;
+      if (!cuit) {
+        return res.status(400).json({ error: 'CUIT requerido' });
+      }
+
+      const empresa = await Empresa.findOne({ where: { cuit } });
+      if (empresa) {
+        return res.status(400).json({ error: 'CUIT ya registrado' });
+      }
+
+      return res.status(200).json({ mensaje: 'CUIT disponible' });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Error interno al verificar CUIT.' });
+    }
+  },
+
   aprobarEmpresa: async (req, res) => {
     try {
       const { id } = req.params;
