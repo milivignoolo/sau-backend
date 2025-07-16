@@ -1,4 +1,4 @@
-// index.js
+
 const express = require('express');
 const cors = require('cors');
 const sequelize = require('./config/database');         // conexión Sequelize
@@ -39,10 +39,8 @@ const authRoutes = require('./routes/auth.routes');
 app.use('/api/auth', authRoutes);
 
 
-
-
 // Inicialización de Sequelize y el servidor
-sequelize.sync({ logging: false })   // actualiza tablas automáticamente
+sequelize.sync({ logging: false })   
   .then(() => {
     console.log('Conexión a la base de datos establecida');
     app.listen(PORT, () => {

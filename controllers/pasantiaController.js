@@ -10,8 +10,8 @@ function calcularPorcentajeCoincidencia(requisitos = [], delEstudiante = []) {
 const pasantiaController = {
   register: async (req, res) => {
     try {
-      const {
-        empresaId,
+      const empresaId = req.user?.id;
+    const {
         titulo,
         descripcion,
         area,
@@ -40,7 +40,7 @@ const pasantiaController = {
         return res.status(404).json({ error: 'Empresa no encontrada.' });
       }
 
-      if (!empresa.aprobada) {
+      if (empresa.estado !== 'aprobada') {
         return res.status(403).json({ error: 'La empresa no está aprobada para registrar pasantías.' });
       }
 
@@ -66,7 +66,7 @@ const pasantiaController = {
         habilidades_blandas,
         idiomas,
         urgencia,
-        estado: 'pendiente' // explícito para claridad
+        estado: 'pendiente' 
       });
 
       res.status(201).json({

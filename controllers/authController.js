@@ -1,69 +1,60 @@
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { Estudiante, Empresa, Administrador } = require('../models/initModels')(require('../config/database'));
+
+const SECRET_KEY = process.env.JWT_SECRET;
 
 const authController = {
   login: async (req, res) => {
-    try {
-      const { email, contraseña } = req.body;
+    const { email, contraseña } = req.body;
 
-      let usuario = null;
-      let rol = null;
+    // Buscar usuario en las 3 tablas
+    let usuario = await Estudiante.findOne({ where: { email } });
+    let role = 'estudiante';
 
-      // 1. Buscar en estudiantes
-      usuario = await Estudiante.findOne({ where: { email } });
-      if (usuario) rol = 'estudiante';
-
-      // 2. Si no está, buscar en empresas
-      if (!usuario) {
-        usuario = await Empresa.findOne({ where: { email } });
-        if (usuario) rol = 'empresa';
-      }
-
-      // 3. Si tampoco está, buscar en administradores
-      if (!usuario) {
-        usuario = await Administrador.findOne({ where: { email } });
-        if (usuario) rol = 'administrador';
-      }
-
-      // 4. Si no se encuentra el usuario
-      if (!usuario) {
-        return res.status(404).json({ error: 'Usuario no encontrado con ese email.' });
-      }
-
-      // 5. Comparar contraseñas
-      const contraseñaValida = await bcrypt.compare(contraseña, usuario.contraseña);
-      if (!contraseñaValida) {
-        return res.status(401).json({ error: 'Contraseña incorrecta.' });
-      }
-
-      // 6. Devolver respuesta con datos básicos
-      let datos = {
-        rol,
-        email: usuario.email,
-      };
-
-      if (rol === 'estudiante') {
-        datos.nombre = usuario.nombre;
-        datos.apellido = usuario.apellido;
-        datos.legajo = usuario.legajo;
-      } else if (rol === 'empresa') {
-        datos.razon_social = usuario.razon_social || usuario.nombre;
-        datos.estado = usuario.estado;
-      } else if (rol === 'administrador') {
-        datos.nombre = usuario.nombre;
-        datos.apellido = usuario.apellido;
-      }
-
-      res.status(200).json({
-        mensaje: 'Login exitoso.',
-        usuario: datos
-      });
-
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Error interno en login.' });
+    if (!usuario) {
+      usuario = await Empresa.findOne({ where: { email } });
+      role = 'empresa';
     }
-  }
+
+    if (!usuario) {
+      usuario = await Administrador.findOne({ where: { email } });
+      role = 'administrador';
+    }
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Validar estado (por ej. empresa aprobada, admin activo, estudiante activo)
+    if (role === 'empresa' && usuario.estado !== 'aprobada') {
+      return res.status(403).json({ error: 'Empresa no aprobada' });
+    }
+
+    if (role === 'administrador' && usuario.estado !== 'activo') {
+      return res.status(403).json({ error: 'Administrador bloqueado' });
+    }
+
+    // Validar contraseña
+    const match = await bcrypt.compare(contraseña, usuario.contraseña);
+    if (!match) {
+      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    }
+
+    // Crear token JWT
+    const token = jwt.sign({ id: usuario.id, role }, SECRET_KEY, { expiresIn: '8h' });
+
+    // Enviar datos relevantes al frontend
+    return res.json({
+      token,
+      user: {
+        id: usuario.id,
+        email: usuario.email,
+        nombre: usuario.nombre || usuario.razon_social || 'Usuario',
+        role,
+      },
+    });
+  },
 };
 
 module.exports = authController;
